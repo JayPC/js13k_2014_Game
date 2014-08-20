@@ -22,6 +22,7 @@
 		<canvas id="myCanvas">
 	</body>
 	<script src="https://dl.dropboxusercontent.com/u/21736488/js13k_2014/bullet.js"></script>
+	<script src="enemy.js"></script>
 
 	<script type="text/javascript">		// Create the canvas  
 		var canvas = document.getElementById("myCanvas");
@@ -111,6 +112,10 @@
 		var earthBulletCoords = [16, 32];
 		var airBulletCoords = [24, 32];
 
+		var fireEnemyShipCoords = [0,48];
+		var waterEnemyShipCoords = [12,48];
+		var earthEnemyShipCoords = [24,48];
+		var airEnemyShipCoords = [36,48];
 
 		//Player Vars
 		var player = {};
@@ -139,7 +144,7 @@
 		var starOffset = 0;
 		var starOffsetSpeed = 10;
 
-		var enemyFireShipCoords = [0, 48];
+		var enemyFireShipCoords = [0, 0];
 		var enemyWaterShipCoords = [12, 48];
 		var enemyEarthShipCoords = [24, 48];
 		var enemyAirShipCoords = [36, 48];
@@ -147,6 +152,9 @@
 
 		var audioFile;
 		var sounds = {};
+
+
+		var enemies = [];
 
 		//INIT*********************************************************************
 		var init = function() {
@@ -168,12 +176,57 @@
 				for (var c = 0; c <= (ctx.canvas.width / 8) / gameScale; c++) {
 					temp.push(Math.round(Math.random() * 4));
 				}
-
 				stars.push(temp);
 			}
-
 			console.log(stars);
 
+			enemies.push(createEnemy({
+				type: 0,
+				liveTime: 3,
+				liveMaxTime: 10,
+				startingX: 50,
+				startingY: 20,
+				startingW: 12,
+				startingH: 12,
+				speed: 40,
+				AIType: 1
+			}));
+
+			enemies.push(createEnemy({
+				type: 1,
+				liveTime: 3,
+				liveMaxTime: 10,
+				startingX: 70,
+				startingY: 20,
+				startingW: 12,
+				startingH: 12,
+				speed: 40,
+				AIType: 0
+			}));
+
+			enemies.push(createEnemy({
+				type: 2,
+				liveTime: 3,
+				liveMaxTime: 10,
+				startingX: 100,
+				startingY: 20,
+				startingW: 12,
+				startingH: 12,
+				speed: 40,
+				AIType: 1
+			}));
+
+			enemies.push(createEnemy({
+				type: 3,
+				liveTime: 3,
+				liveMaxTime: 10,
+				startingX: 140,
+				startingY: 20,
+				startingW: 12,
+				startingH: 12,
+				speed: 40,
+				AIType: 0
+			}));
 		};
 
 		var audioLoaded = function(){
@@ -230,8 +283,16 @@
 					}
 				}
 
+
 				ctx.drawImage(tiles, player.shipStateX, player.shipStateY,
 				player.width, player.height, player.x, player.y, player.width, player.height);
+
+				for (var i = 0; i <= enemies.length - 1; i++) {
+					enemies[i].renderEnemy(ctx);
+				}
+
+
+
 
 
 				for (var i = 0; i <= lightTrail.length - 1; i++) {
@@ -279,7 +340,9 @@
 
 		//LOGIC LOOP*********************************************************************
 		var update = function(deltaTime) {
-
+			for (var i = 0; i <= enemies.length - 1; i++) {
+					enemies[i].updateEnemy(deltaTime);
+				}
 		if(allResourcesReady){
 			player.bulletOffsetX = player.x + player.width - 8;
 			player.bulletOffsetY = player.y + (player.height / 4);
