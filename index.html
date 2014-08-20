@@ -1,0 +1,538 @@
+<!DOCTYPE HTML>
+<meta name="viewport" content="width=device-width, user-scalable=no">
+<meta http-equiv="Content-Type" content="text/html;charset=ISO-8859-1">
+<html>
+	<head>
+		<style>
+			body {
+				margin: 0px;
+				overflow: hidden;
+				background-color: #121212;
+			}
+			canvas {
+				padding-top: 12px;
+				margin-left: auto;
+				margin-right: auto;
+				display: block;
+			}
+		</style>
+	</head>
+	
+	<body>
+		<canvas id="myCanvas">
+	</body>
+	<script src="https://dl.dropboxusercontent.com/u/21736488/js13k_2014/bullet.js"></script>
+
+	<script type="text/javascript">		// Create the canvas  
+		var canvas = document.getElementById("myCanvas");
+		var ctx = canvas.getContext("2d");
+		//var tileSource = "tiles.png";
+		//var audioSource = "Sounds.ogg";
+
+		var tileSource = "https://dl.dropboxusercontent.com/u/21736488/js13k_2014/tiles.png";
+		var audioSource = "https://dl.dropboxusercontent.com/u/21736488/js13k_2014/Sounds.mp3";
+		document.addEventListener('touchmove', function(e) {
+			e.preventDefault();
+		}, false);
+		//ctx.canvas.width  = window.innerWidth-10;
+		//ctx.canvas.height = window.innerHeight-10;
+
+		ctx.canvas.width = 800;
+		ctx.canvas.height = 600;
+
+
+		document.body.appendChild(canvas);
+
+		//IMAGES*********************************************************************
+
+		var allImagesReady = false;
+		var allSoundsReady = false;
+		var allResourcesReady = false;
+		var tiles = new Image();
+
+		//VARRIABLES*****************************************************************
+		//Input and Globals
+		var gameScale = 5;
+
+		var upKey = false;
+		var downKey = false;
+		var leftKey = false;
+		var rightKey = false;
+
+
+		var shooting = false;
+		var shootingBlink = false;
+		var shootingBlinkDone = false;
+		var shootingBlinkTimer = 0;
+		var shootingBlinkMaxTimer = 0.25;
+		var shootingCoords = [48, 32, 5, 16];
+
+		var lightTrail = [
+			[0, 0],
+			[0, 0],
+			[0, 0],
+			[0, 0],
+			[0, 0],
+			[0, 0],
+			[0, 0],
+			[0, 0],
+			[0, 0],
+			[0, 0],
+			[0, 0],
+			[0, 0],
+			[0, 0],
+			[0, 0],
+			[0, 0],
+			[0, 0],
+			[0, 0],
+			[0, 0]
+		];
+
+		var fireShipCoords = [0, 0];
+		var waterShipCoords = [19, 0];
+		var earthShipCoords = [38, 0];
+		var airShipCoords = [56, 0];
+
+		var fireTrailCoords = [0, 16];
+		var waterTrailCoords = [19, 16];
+		var earthTrailCoords = [38, 16];
+		var airTrailCoords = [56, 16];
+
+		var trailCoords = [0, 16];
+
+		var headlightCoords = [64, 32, 12, 16];
+		var glowVisorCoords = [57, 16];
+
+		var starCoords = [32, 32, 8, 8];
+
+
+		var fireBulletCoords = [0, 32];
+		var waterBulletCoords = [8, 32];
+		var earthBulletCoords = [16, 32];
+		var airBulletCoords = [24, 32];
+
+
+		//Player Vars
+		var player = {};
+		player.x = 0;
+		player.y = 0;
+		player.width = 19 - 0.1;
+		player.height = 16 - 0.1;
+		player.collisionWidth = player.width * gameScale;
+		player.collisionHeight = player.height * gameScale;
+		player.shipStateX = 0;
+		player.shipStateY = 0;
+		player.shipState = 0;
+		player.speed = 40;
+
+
+		var bullets = [];
+		var bulletReady = false;
+		var bulletDelay = 0;
+		var bulletMaxDelay = 0.25;
+
+		var fireBulletDelay = 0.25;
+		var waterBulletDelay = 0.45;
+		var earthBulletDelay = 0.55;
+		var airBulletDelay = 0.35;
+
+		var starOffset = 0;
+		var starOffsetSpeed = 10;
+
+		var enemyFireShipCoords = [0, 48];
+		var enemyWaterShipCoords = [12, 48];
+		var enemyEarthShipCoords = [24, 48];
+		var enemyAirShipCoords = [36, 48];
+		var stars = [];
+
+		var audioFile;
+		var sounds = {};
+
+		//INIT*********************************************************************
+		var init = function() {
+
+			tiles.onload = function() {
+				allImagesReady = true;
+			};
+			tiles.src = tileSource;
+
+			if (new Audio().canPlayType("audio/mpeg")) {
+				console.log("no fail");
+				audioFile = new Audio(audioSource);
+				audioFile.oncanplaythrough = audioLoaded();
+			}
+
+
+			for (var i = 0; i <= (ctx.canvas.width / 8) / gameScale; i++) {
+				var temp = [];
+				for (var c = 0; c <= (ctx.canvas.width / 8) / gameScale; c++) {
+					temp.push(Math.round(Math.random() * 4));
+				}
+
+				stars.push(temp);
+			}
+
+			console.log(stars);
+
+		};
+
+		var audioLoaded = function(){
+			allSoundsReady = true;
+		}
+
+		//RENDER*********************************************************************
+		var render = function() {
+			//ctx.canvas.width  = window.innerWidth-10;
+			//ctx.canvas.height = window.innerHeight-10;
+			if (window.innerWidth > 800) {
+				ctx.canvas.width = 800;
+				ctx.canvas.height = 600;
+				gameScale = (ctx.canvas.width) / 160;
+
+			} else {
+				ctx.canvas.width = window.innerWidth - 10;
+				gameScale = (ctx.canvas.width) / 160;
+
+				ctx.canvas.height = ctx.canvas.width * 0.75;
+			}
+
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			ctx.mozImageSmoothingEnabled = false;
+			ctx.webkitImageSmoothingEnabled = false;
+			ctx.msImageSmoothingEnabled = false;
+			ctx.imageSmoothingEnabled = false;
+
+			ctx.fillStyle = '#000011';
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+			ctx.scale(gameScale, gameScale);
+
+			if (allResourcesReady) {
+				for (var c = 0; c <= stars[0].length - 1; c++) {
+					for (var i = 0; i <= stars.length - 1; i++) {
+						switch (stars[i][c]) {
+							case 0:
+								ctx.drawImage(tiles, starCoords[0], starCoords[1],
+								starCoords[2] - 0.1, starCoords[3] - 0.1, (c * starCoords[2]) - starOffset + 0, (i * starCoords[3]), starCoords[2], starCoords[3]);
+								break;
+							case 1:
+								ctx.drawImage(tiles, starCoords[0] + 8, starCoords[1],
+								starCoords[2] - 0.1, starCoords[3] - 0.1, (c * starCoords[2]) - starOffset + 0, (i * starCoords[3]), starCoords[2], starCoords[3]);
+								break;
+							case 2:
+								ctx.drawImage(tiles, starCoords[0], starCoords[1] + 8,
+								starCoords[2] - 0.1, starCoords[3] - 0.1, (c * starCoords[2]) - starOffset + 0, (i * starCoords[3]), starCoords[2], starCoords[3]);
+								break;
+							case 3:
+								ctx.drawImage(tiles, starCoords[0] + 8, starCoords[1] + 8,
+								starCoords[2] - 0.1, starCoords[3] - 0.1, (c * starCoords[2]) - starOffset + 0, (i * starCoords[3]), starCoords[2], starCoords[3]);
+								break;
+						}
+					}
+				}
+
+				ctx.drawImage(tiles, player.shipStateX, player.shipStateY,
+				player.width, player.height, player.x, player.y, player.width, player.height);
+
+
+				for (var i = 0; i <= lightTrail.length - 1; i++) {
+					switch (player.shipState) {
+						case 0:
+							ctx.drawImage(tiles, fireTrailCoords[0], fireTrailCoords[1],
+							player.width, player.height,
+							lightTrail[i][0], lightTrail[i][1], player.width, player.height);
+							break;
+						case 1:
+							ctx.drawImage(tiles, waterTrailCoords[0], waterTrailCoords[1],
+							player.width, player.height,
+							lightTrail[i][0], lightTrail[i][1], player.width, player.height);
+							break;
+						case 2:
+							ctx.drawImage(tiles, earthTrailCoords[0], earthTrailCoords[1],
+							player.width, player.height,
+							lightTrail[i][0], lightTrail[i][1], player.width, player.height);
+							break;
+						case 3:
+							ctx.drawImage(tiles, airTrailCoords[0], airTrailCoords[1],
+							player.width, player.height,
+							lightTrail[i][0], lightTrail[i][1], player.width, player.height);
+							break;
+
+
+					}
+				}
+
+				if (shootingBlink) {
+					ctx.drawImage(tiles, shootingCoords[0], shootingCoords[1],
+					shootingCoords[2], shootingCoords[3],
+					player.x + 15, player.y, shootingCoords[2], shootingCoords[3]);
+				}
+
+
+				for (var i = 0; i <= bullets.length - 1; i++) {
+					bullets[i].renderBullet(ctx);
+				}
+			ctx.drawImage(tiles, headlightCoords[0], headlightCoords[1],
+			headlightCoords[2], headlightCoords[3],
+			player.x + 15, player.y, headlightCoords[2], headlightCoords[3]);
+			}
+		};
+
+		//LOGIC LOOP*********************************************************************
+		var update = function(deltaTime) {
+
+		if(allResourcesReady){
+			player.bulletOffsetX = player.x + player.width - 8;
+			player.bulletOffsetY = player.y + (player.height / 4);
+			player.shipStateX = player.shipState * 19;
+			if (upKey) {
+				player.y -= player.speed * deltaTime;
+			} else if (downKey) {
+				player.y += player.speed * deltaTime;
+			}
+			if (rightKey) {
+				player.x += player.speed * deltaTime;
+			} else if (leftKey) {
+				player.x -= player.speed * deltaTime;
+			}
+
+			lightTrail.push([player.x, player.y]);
+			lightTrail.splice(0, 1);
+
+			if (shooting && bulletReady) {
+				switch (player.shipState) {
+					case 0:
+						playSound([0, 0.17]);
+						shootingBlink = true;
+						shootingBlinkTimer = fireBulletDelay;
+						bullets.push(createBullet({
+							type: player.shipState,
+							liveTime: 3,
+							liveMaxTime: 10,
+							startingX: player.bulletOffsetX,
+							startingY: player.bulletOffsetY,
+							startingW: 8,
+							startingH: 8,
+							speed: 80
+						}));
+						break;
+					case 1:
+						playSound([0.2, 0.35]);
+						shootingBlink = true;
+						shootingBlinkTimer = earthBulletDelay;
+						bullets.push(createBullet({
+
+							type: player.shipState,
+							liveTime: 3,
+							liveMaxTime: 10,
+							startingX: player.bulletOffsetX,
+							startingY: player.bulletOffsetY,
+							startingW: 8,
+							startingH: 8,
+							speed: 80
+						}));
+						break;
+					case 2:
+						var rockSpeed = -10;
+
+						playSound([0.4, 0.6]);
+						shootingBlink = true;
+						shootingBlinkTimer = earthBulletDelay;
+
+						for (var i = 0; i < 3; i++) {
+							bullets.push(createBullet({
+								type: player.shipState,
+								liveTime: 3,
+								liveMaxTime: 10,
+								startingX: player.bulletOffsetX,
+								startingY: player.bulletOffsetY,
+								startingW: 8,
+								startingH: 8,
+								speed: 80,
+								rockSpeed: rockSpeed
+							}));
+							rockSpeed += 10;
+						}
+						break;
+					case 3:
+						playSound([0.65, 0.85]);
+						shootingBlink = true;
+						shootingBlinkTimer = airBulletDelay;
+						bullets.push(createBullet({
+							type: player.shipState,
+							liveTime: 3,
+							liveMaxTime: 10,
+							startingX: player.bulletOffsetX,
+							startingY: player.bulletOffsetY,
+							startingW: 8,
+							startingH: 8,
+							speed: 80
+						}));
+						break;
+				}
+				bulletReady = false;
+				bulletDelay = bulletMaxDelay;
+			}
+
+			if (bulletDelay <= 0) {
+				bulletReady = true;
+				bulletDelay = 0;
+			}
+
+			bulletDelay -= deltaTime;
+
+			if (shootingBlinkTimer <= 0) {
+				shootingBlink = false;
+			} else {}
+			shootingBlinkTimer -= deltaTime * 2;
+
+			for (var i = 0; i <= bullets.length - 1; i++) {
+				bullets[i].updateBullet(deltaTime);
+				if (bullets[i].live == false) {
+					bullets.splice(i, 1);
+				}
+			}
+
+			switch (player.shipState) {
+				case 0:
+					bulletMaxDelay = fireBulletDelay;
+					break;
+				case 1:
+					bulletMaxDelay = waterBulletDelay;
+					break;
+				case 2:
+					bulletMaxDelay = earthBulletDelay;
+					break;
+				case 3:
+					bulletMaxDelay = airBulletDelay;
+					break;
+			}
+
+			starOffset += starOffsetSpeed * deltaTime;
+
+
+
+			if (starOffset >= 8) {
+				for (var c = 0; c <= stars.length - 1; c++) {
+					stars[c].push(Math.round(Math.random() * 4));
+					stars[c].splice(0, 1);
+				}
+				starOffset = starOffset - 8;
+			}
+		}
+
+		if (allImagesReady && allSoundsReady && !allResourcesReady) {
+			allResourcesReady = true;
+		}
+		};
+
+		//MAIN LOOP*********************************************************************
+		var main = function() {
+			var now = Date.now();
+			var delta = now - then;
+
+			update(delta / 1000);
+			render();
+			then = now;
+		};
+
+		init();
+		var then = Date.now();
+		setInterval(main, 10);
+
+		//INPUT*************************************************************************
+		document.onkeydown = function(e) {
+
+			if (e.keyCode == 32) {
+				//space
+				shooting = true;
+			}
+			if (e.keyCode == 38) {
+				//up
+				upKey = true;
+			}
+
+			if (e.keyCode == 40) {
+				//down
+				downKey = true;
+			}
+
+			if (e.keyCode == 37) {
+				//left
+				leftKey = true;
+			}
+
+			if (e.keyCode == 39) {
+				//right
+				rightKey = true;
+			}
+
+			if (e.keyCode == 81) {
+				//Q
+				player.shipState = 0;
+			}
+
+			if (e.keyCode == 87) {
+				//W
+				player.shipState = 1;
+			}
+
+			if (e.keyCode == 69) {
+				//E
+				player.shipState = 2;
+			}
+
+			if (e.keyCode == 82) {
+				//R
+				player.shipState = 3;
+			}
+
+			console.log(e.keyCode);
+		};
+
+		document.onkeyup = function(e) {
+
+			if (e.keyCode == 32) {
+				//space
+				shooting = false;
+			}
+			if (e.keyCode == 38) {
+				//up
+				upKey = false;
+			}
+
+			if (e.keyCode == 40) {
+				//down
+				downKey = false;
+			}
+
+			if (e.keyCode == 37) {
+				//left
+				leftKey = false;
+			}
+
+			if (e.keyCode == 39) {
+				//right
+				rightKey = false;
+			}
+
+			console.log(e.keyCode);
+		};
+
+
+	var playSound = function (soundInfo) {
+	    console.log("Start Time: " + soundInfo[0]);
+	    console.log("End Time: " + soundInfo[1]);
+	    audioFile.currentTime = soundInfo[0];
+ 	    audioFile.play();
+	    var interval = setInterval(function () {
+	        if (audioFile.currentTime >= soundInfo[1]) {
+	            audioFile.pause();
+	            audioFile.currentTime = 0;
+	            clearInterval(interval);
+	        }
+	    }, 1);
+	};
+
+	</script>
+
+</html>
