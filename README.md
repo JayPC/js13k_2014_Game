@@ -11,3 +11,5 @@ Controls are:
 QWER - Change the ship type. this changes the type of bullet that is shot.
 Space - shoot the gun.
 Arrow Keys - Move the ship.
+
+I'll host web projects like this on my sites in the future. I just need to build the site to host it on.
